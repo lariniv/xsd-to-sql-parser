@@ -12,3 +12,4 @@ src_db_table = "src_db_table"  # table name
 a010 = None  # a010 is parsed by script, but can be passed manually
 
 start_date = None  # start_date is parsed by script, but can be passed manually
+nn_in_base_detail = None
