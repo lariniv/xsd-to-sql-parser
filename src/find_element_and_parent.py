@@ -28,7 +28,7 @@ def find_element_and_parent(xsd_element, element_dict) -> ElementAndParentDict:
         if current_xsd_element is None:
             return None
 
-    return {"element": current_xsd_element, "parent": parent_xsd_element, "level": len(hierarchy) - 1}
+    return {"element": current_xsd_element, "parent": parent_xsd_element, "level": len(hierarchy)}
 
 
 def _get_hierarchy(element_dict):
