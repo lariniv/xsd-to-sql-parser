@@ -1,8 +1,8 @@
 import xmlschema
-from src.collect_element_names import collect_element_names
-from src.find_element_and_parent import find_element_and_parent
-from src.generate_sql import generate_sql
-from src.consts import id_param, src_db_owner, src_db_table, a010, start_date, nn_in_base_detail, path
+from collect_element_names import collect_element_names
+from find_element_and_parent import find_element_and_parent
+from generate_sql import generate_sql
+from consts import id_param, src_db_owner, src_db_table, a010, start_date, nn_in_base_detail, path, output_file, table_name
 
 xml_scheme = xmlschema.XMLSchema(path)
 
@@ -12,7 +12,7 @@ xml_dict = xml_scheme.to_dict(path)
 
 element_names = collect_element_names(xml_dict)
 
-nn_in_level = 0
+nn_in_level = 1
 
 annotation = xml_scheme.annotations
 
@@ -29,12 +29,12 @@ except:
     print('No start date found')
 
 results = []
+after_data_element_found = False
 
 for value in element_names:
     element = None
     parent = None
-
-    level = 0
+    level = 1
 
     if value["parent"] is None:
         element = xml_scheme.elements[value["elem_name"]]
@@ -42,6 +42,10 @@ for value in element_names:
     else:
         element, parent, level = find_element_and_parent(
             root_element, value).values()
+
+    if after_data_element_found == False:
+        if element.name == 'DATA':
+            after_data_element_found = True
 
     element_data_type = ''
     data_scale = None
@@ -84,15 +88,22 @@ for value in element_names:
                     regexps = xsd_type.patterns.regexps
 
                     if isinstance(regexps, list) and len(regexps) == 1:
-                        element_data_type = None
-                        print(
-                            f'Manual intervention required in {element.name} to determine the data type\n')
+                        if r'(0[1-9]|[12]\d|3[01])\.(0[1-9]|1[0-2])\.\d\d\d\d' in regexps[0]:
+                            element_data_type = "DATE"
+                        else:
+                            element_data_type = "VARCHAR2"
+                            print(
+                                f'Manual intervention required in {element.name} to determine the data type\n')
                     else:
+                        element_data_type = "VARCHAR2"
                         print(
                             f"More than one regular expression pattern found in {element.name}\n")
     else:
         print(f'No type found for {element.name}\n')
         element_data_type = "VARCHAR2"
+
+    if element_data_type == 'NUMBER' and data_precision is None:
+        data_precision = 22
 
     if element.annotation:
         try:
@@ -100,34 +111,35 @@ for value in element_names:
         except:
             literal = None
 
-    parent_id = None
+    if after_data_element_found:
+        parent_id = None
 
-    if parent:
-        parent_id = next(
-            (item for item in results if item['tag'] == parent.name), None)['id']
+        if parent:
+            for value in results:
+                if value['tag'] == parent.name:
+                    parent_id = value['id']
+                    break
 
-    results.append({'id': nn_in_level + id_param,
-                    'a010': a010,
-                    'lvl': level,
-                    'tag': element.name,
-                    'id_tag_parent': parent_id,
-                    'nn_in_level': nn_in_level,
-                    'src_db_owner': src_db_owner,
-                    'src_db_table': src_db_table,
-                    'src_db_column': element.name,
-                    'data_type': element_data_type,
-                    'literal': literal,
-                    'data_precision': data_precision,
-                    'data_scale': data_scale,
-                    'nn_in_base_detail': nn_in_base_detail,
-                    'f_nil': nillable,
-                    'd_open': start_date,
-                    'd_close': None
-                    })
+        results.append({'id': nn_in_level + id_param,
+                        'a010': a010,
+                        'lvl': level,
+                        'tag': element.name,
+                        'id_tag_parent': parent_id,
+                        'nn_in_level': nn_in_level,
+                        'src_db_owner': src_db_owner,
+                        'src_db_table': src_db_table,
+                        'src_db_column': element.name,
+                        'data_type': element_data_type,
+                        'literal': literal,
+                        'data_precision': data_precision,
+                        'data_scale': data_scale,
+                        'nn_in_base_detail': nn_in_base_detail,
+                        'f_nil': nillable,
+                        'd_open': start_date,
+                        'd_close': None
+                        })
+        nn_in_level += 1
 
-    nn_in_level += 1
 
-
-output_file = 'output.sql'
 insert_statements = generate_sql(
-    results, 'XSD_PARSE', output_file)
+    results, table_name, output_file)
