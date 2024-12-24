@@ -45,11 +45,27 @@ Python script that parses and converts NBU xsd statreports to SQL.
    ```bash
    pip install -r requirements.txt
    ```
+   
+6. Configure the src/consts.py file with valid data
+```bash
+path = "https://bank.gov.ua/NBUStatService/v1/statdirectory/report/f3wx.xsd?reportdate=20250101"
 
-## Usage
+output_file = 'output.sql'
+table_name = 'XSD_PARSE'
 
-Provide instructions on how to use your project. For example:
+id_param = 0
 
+src_db_owner = "src_db_ownership"
+src_db_table = "src_db_table"
+
+a010 = None
+
+start_date = None
+nn_in_base_detail = None
+
+```
+
+7. Run the script
 ```bash
 python src/main.py
 ```
