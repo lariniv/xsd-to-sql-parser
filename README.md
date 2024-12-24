@@ -14,8 +14,8 @@ Python script that parses and converts NBU xsd statreports to SQL.
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/your-username/your-repository.git
-   cd your-repository
+   git clone https://github.com/lariniv/xsd-to-sql-parser.git
+   cd xsd-to-sql-parser
    ```
 
 2. Create a virtual environment:
